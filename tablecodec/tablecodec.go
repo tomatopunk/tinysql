@@ -71,7 +71,23 @@ func EncodeRowKeyWithHandle(tableID int64, handle int64) kv.Key {
 
 // DecodeRecordKey decodes the key and gets the tableID, handle.
 func DecodeRecordKey(key kv.Key) (tableID int64, handle int64, err error) {
-	/* Your code here */
+	if len(key) != RecordRowKeyLen{
+		err = errors.New("")
+		return
+	}
+	buf := key[len(tablePrefix):]
+	buf,_tableID,err := codec.DecodeInt(buf)
+	if err != nil {
+		return
+	}
+	tableID = _tableID
+	buf = buf[len(recordPrefixSep):]
+	buf,_handle,err := codec.DecodeInt(buf)
+	if err != nil {
+		return
+	}
+	handle = _handle
+
 	return
 }
 
@@ -94,14 +110,31 @@ func EncodeIndexSeekKey(tableID int64, idxID int64, encodedValue []byte) kv.Key 
 
 // DecodeIndexKeyPrefix decodes the key and gets the tableID, indexID, indexValues.
 func DecodeIndexKeyPrefix(key kv.Key) (tableID int64, indexID int64, indexValues []byte, err error) {
-	/* Your code here */
+	if len(key) < prefixLen + idLen  {
+		return
+	}
+	err = nil
+	buffer := key[len(tablePrefix):]
+
+	buf,_tableID,err := codec.DecodeInt(buffer)
+	if err != nil {
+		return
+	}
+	tableID = _tableID
+
+	buf = buf[len(indexPrefixSep):]
+	buf,idxId,err := codec.DecodeInt(buf)
+	if err != nil {
+		return
+	}
+	indexID = idxId
+	indexValues = buf
 	return tableID, indexID, indexValues, nil
 }
 
 // DecodeIndexKey decodes the key and gets the tableID, indexID, indexValues.
 func DecodeIndexKey(key kv.Key) (tableID int64, indexID int64, indexValues []string, err error) {
 	k := key
-
 	tableID, indexID, key, err = DecodeIndexKeyPrefix(key)
 	if err != nil {
 		return 0, 0, nil, errors.Trace(err)
